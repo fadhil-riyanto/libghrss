@@ -25,7 +25,7 @@ typedef struct gh_rss_ctx {
 void gh_rss_init(gh_rss_ctx_t *ctx);
 void gh_rss_get_updates(gh_rss_ctx_t *ctx, const char* username, const char* repositort);
 char* gh_rss_list(gh_rss_ctx_t *ctx);
-void gh_rss_seen(char* special);
+void gh_rss_seen(gh_rss_ctx_t *ctx, char* special);
 void gh_rss_free(gh_rss_ctx_t *ctx);
 
 #endif

@@ -73,7 +73,6 @@ static void _xml_internal_parse_entry(xmlDocPtr xml, xmlNodePtr cur, _str_int_t*
         while (cur != NULL) {
                 if (!xmlStrcmp(cur->name, (const xmlChar*)"id")) {
                         id = xmlNodeListGetString(xml, cur->xmlChildrenNode, 1);
-                        printf("%s\n", id);
 
                         memdb->db.insert({std::string((char*)id), 0});
                         xmlFree(id);
@@ -157,12 +156,27 @@ void gh_rss_get_updates(gh_rss_ctx_t *ctx, const char* username, const char* rep
         _reset_memory(&ctx->memory_struct);
 }
 
+char* gh_rss_list(gh_rss_ctx_t *ctx)
+{
+        for (auto itr = ctx->memdb.db.begin(); itr != ctx->memdb.db.end(); ++itr) { 
+                if (itr->second == 0) {
+                        // char* ret = (char*)malloc(strlen(itr->first.c_str()));
+                        // ret = itr->first.c_str();
+                        return strdup(itr->first.c_str());
+                }
+        } 
+        return 0; /* no updates */
+}
+
+void gh_rss_seen(gh_rss_ctx_t *ctx, char* special)
+{
+        ctx->memdb.db[special] = 1;
+}
+
 void gh_rss_free(gh_rss_ctx_t *ctx) 
 {
 
-        for (auto itr = ctx->memdb.db.begin(); itr != ctx->memdb.db.end(); ++itr) { 
-                printf("%s | %d\n", itr->first.c_str(), itr->second);
-        } 
+        
 
         free(ctx->memory_struct.mem_ptr);
 
