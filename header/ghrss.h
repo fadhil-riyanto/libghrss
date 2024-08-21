@@ -4,11 +4,14 @@
 #include <curl/curl.h>
 #include <stdio.h>
 
-typedef struct gh_rss_ctx {
+struct memory_struct {
         char *mem_ptr;
         size_t memsize;
+};
 
+typedef struct gh_rss_ctx {
         CURL* curl_ctx;
+        struct memory_struct memory_struct;
 } gh_rss_ctx_t;
 
 void gh_rss_init(gh_rss_ctx_t *ctx);

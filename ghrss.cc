@@ -1,14 +1,23 @@
+#include <cstddef>
 #include <cstdio>
+#include <cstdlib>
 #include <stdlib.h>
 #include "header/ghrss.h"
 #include <curl/curl.h>
 #include <string>
 #include <fmt/core.h>
 
+
 static void _init_curl(gh_rss_ctx_t *ctx)
 {
         ctx->curl_ctx = curl_easy_init();
 }
+
+// static size_t curl_write_mem_cb(void* contents, size_t size, size_t n, void *userp)
+// {
+//         size_t realsize = size * n;
+
+// }
 
 static inline void _peform(gh_rss_ctx_t *ctx, std::string builded_url)
 {
@@ -35,8 +44,10 @@ static inline std::string build_github_query(const char* username, const char* r
 void gh_rss_init(gh_rss_ctx_t *ctx) 
 {
         /* init heap */
-        ctx->mem_ptr = (char*)malloc(1);
-        ctx->memsize =   0;
+        // ctx->mem_ptr = (char*)malloc(1);
+        // ctx->memsize =   0;
+        ctx->memory_struct.mem_ptr = (char*)malloc(1);
+        ctx->memory_struct.memsize = 1;
 
         /* init curl */
         curl_global_init(CURL_GLOBAL_ALL);
@@ -55,7 +66,7 @@ void gh_rss_get_updates(gh_rss_ctx_t *ctx, const char* username, const char* rep
 
 void gh_rss_free(gh_rss_ctx_t *ctx) 
 {
-        free(ctx->mem_ptr);
+        free(ctx->memory_struct.mem_ptr);
 
         curl_easy_cleanup(ctx->curl_ctx);
         curl_global_cleanup();
