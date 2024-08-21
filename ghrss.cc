@@ -59,17 +59,50 @@ static inline std::string build_github_query(const char* username, const char* r
         return res;
 }
 
+static void _xml_internal_parse_entry(xmlDocPtr xml, xmlNodePtr cur)
+{
+        xmlChar *id;
+        cur = cur->xmlChildrenNode;
+        while (cur != NULL) {
+                if (!xmlStrcmp(cur->name, (const xmlChar*)"id")) {
+                        id = xmlNodeListGetString(xml, cur->xmlChildrenNode, 1);
+                        printf("%s\n", id);
+                        xmlFree(id);
+                }
+                cur = cur->next;
+        }
+}
+
 static void _xml_parse(struct memory_struct *memstruct)
 {
-        xmlDocPtr xmldoc;
-        xmldoc = xmlReadMemory(memstruct->mem_ptr, memstruct->memsize, "random.xml", "UTF-8", 0);
+        xmlDocPtr xml;
+        xml = xmlReadMemory(memstruct->mem_ptr, memstruct->memsize, "random.xml", "UTF-8", 0);
 
-        if (xmldoc == NULL) {
+        if (xml == NULL) {
                 fprintf(stderr, "XML FAILED PARSE");
                 return;
         }
 
-        xmlFreeDoc(xmldoc);
+        xmlNodePtr cur;
+        cur = xmlDocGetRootElement(xml);
+
+        if (xmlStrcmp(cur->name, (const xmlChar*)"feed")) {
+                printf("xml root invalid");
+                goto xml_free;
+        }
+
+        cur = cur->xmlChildrenNode;
+        while(cur != NULL) {
+                if (!xmlStrcmp(cur->name, (const xmlChar*)"entry")) {
+                        _xml_internal_parse_entry(xml, cur);
+                }
+                
+                cur = cur->next;
+
+        }
+
+xml_free:
+        xmlFreeDoc(xml);
 }
 
 void gh_rss_init(gh_rss_ctx_t *ctx) 
