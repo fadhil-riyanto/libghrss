@@ -8,7 +8,8 @@
 #include <curl/curl.h>
 #include <string>
 #include <fmt/core.h>
-
+#include <libxml/parser.h>
+#include <libxml/tree.h>
 
 static void _init_curl(gh_rss_ctx_t *ctx)
 {
@@ -58,6 +59,19 @@ static inline std::string build_github_query(const char* username, const char* r
         return res;
 }
 
+static void _xml_parse(struct memory_struct *memstruct)
+{
+        xmlDocPtr xmldoc;
+        xmldoc = xmlReadMemory(memstruct->mem_ptr, memstruct->memsize, "random.xml", "UTF-8", 0);
+
+        if (xmldoc == NULL) {
+                fprintf(stderr, "XML FAILED PARSE");
+                return;
+        }
+
+        xmlFreeDoc(xmldoc);
+}
+
 void gh_rss_init(gh_rss_ctx_t *ctx) 
 {
         /* init heap */
@@ -81,7 +95,8 @@ void gh_rss_get_updates(gh_rss_ctx_t *ctx, const char* username, const char* rep
         std::string url = build_github_query(username, repo);
         _peform(ctx, url.c_str());
 
-        printf("%s\n", ctx->memory_struct.mem_ptr);
+        // printf("%s\n", ctx->memory_struct.mem_ptr);
+        _xml_parse(&ctx->memory_struct);
 }
 
 void gh_rss_free(gh_rss_ctx_t *ctx) 
