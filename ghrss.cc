@@ -126,14 +126,14 @@ void gh_rss_init(gh_rss_ctx_t *ctx)
 static int _reset_memory(struct memory_struct *memstruct)
 {
         memset(memstruct->mem_ptr, '\0', memstruct->memsize);
-        char* ptr = (char*)realloc(memstruct->mem_ptr, 1);
+        char* ptr = (char*)realloc(memstruct->mem_ptr, 0);
         if (!ptr) {
                 perror("reset memory");
                 return ENOMEM;
         }
 
         memstruct->mem_ptr = ptr;
-        memstruct->memsize = 1;
+        memstruct->memsize = 0;
 
         return 0;
 }
