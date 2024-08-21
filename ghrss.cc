@@ -149,7 +149,7 @@ static int _reset_memory(struct memory_struct *memstruct)
 void gh_rss_get_updates(gh_rss_ctx_t *ctx, const char* username, const char* repo)
 {
         std::string url = build_github_query(username, repo);
-        _peform(ctx, url.c_str());
+        _peform(ctx, "http://127.0.0.1:8000/releases.atom");
 
         // printf("%s\n", ctx->memory_struct.mem_ptr);
         _xml_parse(&ctx->memory_struct, &ctx->memdb);
