@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
 #include <stdlib.h>
 #include "header/ghrss.h"
 #include <curl/curl.h>
@@ -11,10 +12,16 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
+typedef  struct memory_db_cache _str_int_t;
+
+#define DEBUG(x) printf("%s\n", x.c_str())
+// #define DEBUG_MAP()
+
 static void _init_curl(gh_rss_ctx_t *ctx)
 {
         ctx->curl_ctx = curl_easy_init();
 }
+
 
 static size_t _curl_write_mem_cb(void* contents, size_t size, size_t n, void *userp)
 {
@@ -59,7 +66,7 @@ static inline std::string build_github_query(const char* username, const char* r
         return res;
 }
 
-static void _xml_internal_parse_entry(xmlDocPtr xml, xmlNodePtr cur)
+static void _xml_internal_parse_entry(xmlDocPtr xml, xmlNodePtr cur, _str_int_t* memdb)
 {
         xmlChar *id;
         cur = cur->xmlChildrenNode;
@@ -67,13 +74,15 @@ static void _xml_internal_parse_entry(xmlDocPtr xml, xmlNodePtr cur)
                 if (!xmlStrcmp(cur->name, (const xmlChar*)"id")) {
                         id = xmlNodeListGetString(xml, cur->xmlChildrenNode, 1);
                         printf("%s\n", id);
+
+                        memdb->db.insert({std::string((char*)id), 0});
                         xmlFree(id);
                 }
                 cur = cur->next;
         }
 }
 
-static void _xml_parse(struct memory_struct *memstruct)
+static void _xml_parse(struct memory_struct *memstruct, _str_int_t* memdb)
 {
         xmlDocPtr xml;
         xml = xmlReadMemory(memstruct->mem_ptr, memstruct->memsize, "random.xml", "UTF-8", 0);
@@ -94,7 +103,7 @@ static void _xml_parse(struct memory_struct *memstruct)
         cur = cur->xmlChildrenNode;
         while(cur != NULL) {
                 if (!xmlStrcmp(cur->name, (const xmlChar*)"entry")) {
-                        _xml_internal_parse_entry(xml, cur);
+                        _xml_internal_parse_entry(xml, cur, memdb);
                 }
                 
                 cur = cur->next;
@@ -113,14 +122,14 @@ void gh_rss_init(gh_rss_ctx_t *ctx)
         ctx->memory_struct.mem_ptr = (char*)malloc(1);
         ctx->memory_struct.memsize = 0;
 
+        ctx->memdb.db = std::map<std::string, int>();
+        ctx->memdb.size = 0;
 
         /* init curl */
         curl_global_init(CURL_GLOBAL_ALL);
         _init_curl(ctx);
 
         /* test purpose */
-        
-
 }
 
 static int _reset_memory(struct memory_struct *memstruct)
@@ -144,12 +153,17 @@ void gh_rss_get_updates(gh_rss_ctx_t *ctx, const char* username, const char* rep
         _peform(ctx, url.c_str());
 
         // printf("%s\n", ctx->memory_struct.mem_ptr);
-        _xml_parse(&ctx->memory_struct);
+        _xml_parse(&ctx->memory_struct, &ctx->memdb);
         _reset_memory(&ctx->memory_struct);
 }
 
 void gh_rss_free(gh_rss_ctx_t *ctx) 
 {
+
+        for (auto itr = ctx->memdb.db.begin(); itr != ctx->memdb.db.end(); ++itr) { 
+                printf("%s | %d\n", itr->first.c_str(), itr->second);
+        } 
+
         free(ctx->memory_struct.mem_ptr);
 
         curl_easy_cleanup(ctx->curl_ctx);
