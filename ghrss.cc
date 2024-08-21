@@ -90,6 +90,21 @@ void gh_rss_init(gh_rss_ctx_t *ctx)
 
 }
 
+static int _reset_memory(struct memory_struct *memstruct)
+{
+        memset(memstruct->mem_ptr, '\0', memstruct->memsize);
+        char* ptr = (char*)realloc(memstruct->mem_ptr, 1);
+        if (!ptr) {
+                perror("reset memory");
+                return ENOMEM;
+        }
+
+        memstruct->mem_ptr = ptr;
+        memstruct->memsize = 1;
+
+        return 0;
+}
+
 void gh_rss_get_updates(gh_rss_ctx_t *ctx, const char* username, const char* repo)
 {
         std::string url = build_github_query(username, repo);
@@ -97,6 +112,7 @@ void gh_rss_get_updates(gh_rss_ctx_t *ctx, const char* username, const char* rep
 
         // printf("%s\n", ctx->memory_struct.mem_ptr);
         _xml_parse(&ctx->memory_struct);
+        _reset_memory(&ctx->memory_struct);
 }
 
 void gh_rss_free(gh_rss_ctx_t *ctx) 
