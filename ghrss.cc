@@ -13,7 +13,7 @@ static void _init_curl(gh_rss_ctx_t *ctx)
 static inline void _peform(gh_rss_ctx_t *ctx, std::string builded_url)
 {
         CURLcode res;
-        curl_easy_setopt(ctx->curl_ctx, CURLOPT_URL, "https://google.com");
+        curl_easy_setopt(ctx->curl_ctx, CURLOPT_URL, builded_url.c_str());
         curl_easy_setopt(ctx->curl_ctx, CURLOPT_FOLLOWLOCATION, 1L);
 
 
@@ -24,7 +24,7 @@ static inline void _peform(gh_rss_ctx_t *ctx, std::string builded_url)
         }
 }
 
-static inline std::string build_github_query(std::string username, std::string reponame)
+static inline std::string build_github_query(const char* username, const char* reponame)
 {
         std::string res = fmt::format("https://github.com/{0}/{1}/releases.atom", 
                                                 username, reponame);
@@ -43,13 +43,20 @@ void gh_rss_init(gh_rss_ctx_t *ctx)
         _init_curl(ctx);
 
         /* test purpose */
-        _peform(ctx, "google.com");
+        
 
+}
+
+void gh_rss_get_updates(gh_rss_ctx_t *ctx, const char* username, const char* repo)
+{
+        std::string url = build_github_query(username, repo);
+        _peform(ctx, url.c_str());
 }
 
 void gh_rss_free(gh_rss_ctx_t *ctx) 
 {
         free(ctx->mem_ptr);
 
+        curl_easy_cleanup(ctx->curl_ctx);
         curl_global_cleanup();
 }
