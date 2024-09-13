@@ -6,13 +6,18 @@
 #include <stdio.h>
 #include <string>
 
+enum file_opcode {
+        F_LOAD,
+        F_STORE
+};
+
 struct memory_struct {
         char *mem_ptr;
         size_t memsize;
 };
 
 struct memory_db_cache {
-        std::map<std::string, int> db;
+        std::map<std::string, std::string> db;
         int size;
 };
 
