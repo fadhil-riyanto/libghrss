@@ -11,11 +11,42 @@
 #include <fmt/core.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <cassert>
+#include "leveldb/db.h"
 
 typedef  struct memory_db_cache _str_int_t;
 
 #define DEBUG(x) printf("%s\n", x.c_str())
+#define ENABLE_DEBUG_SERVER
 // #define DEBUG_MAP()
+
+// static void google_leveldb_load(char* filename, _str_int_t *memdb, file_opcode op)
+// {
+//         leveldb::DB* db;
+//         leveldb::Options options;
+//         options.create_if_missing = true;
+//         leveldb::Status status = leveldb::DB::Open(options, filename, &db);
+//         assert(status.ok());
+        
+
+//         if (op == F_LOAD) {
+//                 leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+
+//                 for (it->SeekToFirst(); it->Valid(); it->Next()) {
+//                         memdb->db.insert(
+//                                 {
+//                                         it->key().ToString(),
+//                                         (int)it->value()
+//                                 }
+//                         );
+//                 }
+//                 assert(it->status().ok());
+//         }
+        
+
+//         delete db;
+
+// }
 
 static void _init_curl(gh_rss_ctx_t *ctx)
 {
@@ -74,7 +105,7 @@ static void _xml_internal_parse_entry(xmlDocPtr xml, xmlNodePtr cur, _str_int_t*
                 if (!xmlStrcmp(cur->name, (const xmlChar*)"id")) {
                         id = xmlNodeListGetString(xml, cur->xmlChildrenNode, 1);
 
-                        memdb->db.insert({std::string((char*)id), 0});
+                        memdb->db.insert({std::string((char*)id), "not_seen_yet"});
                         xmlFree(id);
                 }
                 cur = cur->next;
@@ -121,7 +152,7 @@ void gh_rss_init(gh_rss_ctx_t *ctx)
         ctx->memory_struct.mem_ptr = (char*)malloc(1);
         ctx->memory_struct.memsize = 0;
 
-        ctx->memdb.db = std::map<std::string, int>();
+        ctx->memdb.db = std::map<std::string, std::string>();
         ctx->memdb.size = 0;
 
         /* init curl */
@@ -149,7 +180,12 @@ static int _reset_memory(struct memory_struct *memstruct)
 void gh_rss_get_updates(gh_rss_ctx_t *ctx, const char* username, const char* repo)
 {
         std::string url = build_github_query(username, repo);
-        _peform(ctx, "http://127.0.0.1:8000/releases.atom");
+
+        #ifdef ENABLE_DEBUG_SERVER
+        _peform(ctx, "http://127.0.0.1:9000/releases.atom");
+        #else
+        _peform(ctx, url);
+        #endif
 
         // printf("%s\n", ctx->memory_struct.mem_ptr);
         _xml_parse(&ctx->memory_struct, &ctx->memdb);
@@ -159,7 +195,7 @@ void gh_rss_get_updates(gh_rss_ctx_t *ctx, const char* username, const char* rep
 char* gh_rss_list(gh_rss_ctx_t *ctx)
 {
         for (auto itr = ctx->memdb.db.begin(); itr != ctx->memdb.db.end(); ++itr) { 
-                if (itr->second == 0) {
+                if (!itr->second.compare("not_seen_yet")) {
                         // char* ret = (char*)malloc(strlen(itr->first.c_str()));
                         // ret = itr->first.c_str();
                         return strdup(itr->first.c_str());
@@ -170,7 +206,7 @@ char* gh_rss_list(gh_rss_ctx_t *ctx)
 
 void gh_rss_seen(gh_rss_ctx_t *ctx, char* special)
 {
-        ctx->memdb.db[special] = 1;
+        ctx->memdb.db[special] = "seen";
 }
 
 void gh_rss_free(gh_rss_ctx_t *ctx) 
