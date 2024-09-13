@@ -18,7 +18,6 @@
 typedef  struct memory_db_cache _str_int_t;
 
 #define DEBUG(x) printf("%s\n", x.c_str())
-#define ENABLE_DEBUG_SERVER
 // #define DEBUG_MAP()
 
 static void google_leveldb_open(const char* filename, _str_int_t *memdb, file_opcode op)
