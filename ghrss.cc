@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <leveldb/options.h>
 #include <map>
 #include <stdlib.h>
 #include "header/ghrss.h"
@@ -20,33 +21,47 @@ typedef  struct memory_db_cache _str_int_t;
 #define ENABLE_DEBUG_SERVER
 // #define DEBUG_MAP()
 
-// static void google_leveldb_load(char* filename, _str_int_t *memdb, file_opcode op)
-// {
-//         leveldb::DB* db;
-//         leveldb::Options options;
-//         options.create_if_missing = true;
-//         leveldb::Status status = leveldb::DB::Open(options, filename, &db);
-//         assert(status.ok());
+static void google_leveldb_open(const char* filename, _str_int_t *memdb, file_opcode op)
+{
+        leveldb::DB* db;
+        leveldb::Options options;
+        options.create_if_missing = true;
+        leveldb::Status status = leveldb::DB::Open(options, filename, &db);
+        assert(status.ok());
         
 
-//         if (op == F_LOAD) {
-//                 leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+        if (op == F_LOAD) {
 
-//                 for (it->SeekToFirst(); it->Valid(); it->Next()) {
-//                         memdb->db.insert(
-//                                 {
-//                                         it->key().ToString(),
-//                                         (int)it->value()
-//                                 }
-//                         );
-//                 }
-//                 assert(it->status().ok());
-//         }
+                // db->Put(leveldb::WriteOptions(), "a", "Aa");
+                leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+
+                for (it->SeekToFirst(); it->Valid(); it->Next()) {
+                        memdb->db.insert(
+                                {
+                                        it->key().ToString(),
+                                        (std::string)it->value().data()
+                                }
+                        );
+                }
+                assert(it->status().ok());
+
+                delete it;
+        }
+
+        if (op == F_STORE) {
+           
+                for (auto i = memdb->db.begin(); i != memdb->db.end(); ++i) {
+                        
+                        db->Put(leveldb::WriteOptions(), i->first, i->second);
+                        // printf("saved %s %s\n", i->first.c_str(), i->second.c_str());
+
+                }
+        }
         
 
-//         delete db;
+        delete db;
 
-// }
+}
 
 static void _init_curl(gh_rss_ctx_t *ctx)
 {
@@ -155,6 +170,8 @@ void gh_rss_init(gh_rss_ctx_t *ctx)
         ctx->memdb.db = std::map<std::string, std::string>();
         ctx->memdb.size = 0;
 
+        google_leveldb_open("test.db", &ctx->memdb, F_LOAD);
+
         /* init curl */
         curl_global_init(CURL_GLOBAL_ALL);
         _init_curl(ctx);
@@ -218,4 +235,6 @@ void gh_rss_free(gh_rss_ctx_t *ctx)
 
         curl_easy_cleanup(ctx->curl_ctx);
         curl_global_cleanup();
+
+        google_leveldb_open("test.db", &ctx->memdb, F_STORE);
 }
